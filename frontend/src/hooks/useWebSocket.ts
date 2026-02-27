@@ -1,5 +1,47 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { WSMessage } from "../types";
+import type { WSMessage, CadCommandMessage } from "../types";
+import { useModelStore } from "../store/useModelStore";
+import type { ClipPlane } from "../store/useModelStore";
+
+function handleCadCommand(msg: CadCommandMessage) {
+  const store = useModelStore.getState();
+
+  switch (msg.action) {
+    case "select_faces":
+      if (msg.face_ids) {
+        for (const id of msg.face_ids) {
+          store.selectFace(id, true); // shift=true to add to selection
+        }
+      }
+      break;
+
+    case "clear_selection":
+      store.clearSelection();
+      break;
+
+    case "create_feature":
+      if (msg.name) {
+        store.createFeature(msg.name);
+      }
+      break;
+
+    case "delete_feature":
+      if (msg.name) {
+        store.deleteFeature(msg.name);
+      }
+      break;
+
+    case "set_display":
+      if (msg.xray !== undefined) store.setXray(msg.xray);
+      if (msg.wireframe !== undefined) store.setWireframe(msg.wireframe);
+      if (msg.colors !== undefined) store.setColors(msg.colors);
+      if (msg.clip_plane !== undefined) {
+        store.setClipPlane(msg.clip_plane as ClipPlane);
+      }
+      if (msg.fit_all) store.fitAll();
+      break;
+  }
+}
 
 export function useWebSocket(url: string) {
   const [connected, setConnected] = useState(false);
@@ -15,6 +57,13 @@ export function useWebSocket(url: string) {
 
     ws.onmessage = (event) => {
       const message: WSMessage = JSON.parse(event.data);
+
+      // Intercept cad_command messages — dispatch to store, don't add to chat
+      if (message.type === "cad_command") {
+        handleCadCommand(message as CadCommandMessage);
+        return;
+      }
+
       setMessages((prev) => [...prev, message]);
     };
 

@@ -539,6 +539,17 @@
   font-style: italic;
 }
 
+.chat-msg.thinking {
+  color: #aaa;
+  font-style: italic;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 .chat-input {
   display: flex;
   gap: 8px;

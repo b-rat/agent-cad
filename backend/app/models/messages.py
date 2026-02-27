@@ -30,7 +30,19 @@ class SystemMessage(BaseModel):
     content: str
 
 
-WSMessage = ChatMessage | CadUpdateMessage | DrawingMessage | SystemMessage
+class CadCommandMessage(BaseModel):
+    type: Literal["cad_command"] = "cad_command"
+    action: str  # select_faces | clear_selection | create_feature | delete_feature | set_display
+    face_ids: list[int] | None = None
+    name: str | None = None
+    xray: bool | None = None
+    wireframe: bool | None = None
+    colors: bool | None = None
+    clip_plane: str | None = None
+    fit_all: bool | None = None
+
+
+WSMessage = ChatMessage | CadUpdateMessage | DrawingMessage | SystemMessage | CadCommandMessage
 
 
 # --- CAD model data models ---

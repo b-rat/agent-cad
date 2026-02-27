@@ -25,11 +25,24 @@ export interface SystemMessage {
   content: string;
 }
 
+export interface CadCommandMessage {
+  type: "cad_command";
+  action: string;
+  face_ids?: number[];
+  name?: string;
+  xray?: boolean;
+  wireframe?: boolean;
+  colors?: boolean;
+  clip_plane?: string | null;
+  fit_all?: boolean;
+}
+
 export type WSMessage =
   | ChatMessage
   | CadUpdateMessage
   | DrawingMessage
-  | SystemMessage;
+  | SystemMessage
+  | CadCommandMessage;
 
 // --- CAD model types ---
 
