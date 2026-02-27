@@ -1,6 +1,5 @@
 import { CadViewer } from "./components/CadViewer";
-import { ChatPanel } from "./components/ChatPanel";
-import { DrawingOverlay } from "./components/DrawingOverlay";
+import RightPanel from "./components/RightPanel";
 import { useWebSocket } from "./hooks/useWebSocket";
 import "./App.css";
 
@@ -16,9 +15,8 @@ export default function App() {
     <div className="app">
       <div className="viewport">
         <CadViewer />
-        <DrawingOverlay />
       </div>
-      <ChatPanel connected={connected} messages={messages} onSend={sendMessage} />
+      <RightPanel connected={connected} messages={messages} onSend={sendMessage} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import health, ws
+from app.routers import health, model, ws
 
 app = FastAPI(title="agent-cad", version="0.1.0")
 
@@ -14,4 +14,5 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
+app.include_router(model.router)
 app.include_router(ws.router)

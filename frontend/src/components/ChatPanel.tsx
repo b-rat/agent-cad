@@ -21,14 +21,6 @@ export function ChatPanel({ connected, messages, onSend }: ChatPanelProps) {
 
   return (
     <div className="chat-panel">
-      <div className="chat-header">
-        <span
-          className="status-dot"
-          style={{ background: connected ? "#4caf50" : "#f44336" }}
-        />
-        <span>{connected ? "Connected" : "Disconnected"}</span>
-      </div>
-
       <div className="chat-messages">
         {messages
           .filter((m) => m.type === "chat" || m.type === "system")
