@@ -2,11 +2,15 @@
 
 import json
 import logging
+import os
 from typing import Any, Callable, Awaitable
 
 from anthropic import AsyncAnthropic
 
 from .cad_engine import CadEngine
+
+DEFAULT_MODEL = "claude-sonnet-4-5"
+CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", DEFAULT_MODEL)
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +180,7 @@ class AIAgent:
         # Agentic loop: call Claude, execute tools, repeat until end_turn
         while True:
             response = await self.client.messages.create(
-                model="claude-sonnet-4-5",
+                model=CLAUDE_MODEL,
                 max_tokens=4096,
                 system=SYSTEM_PROMPT,
                 tools=TOOLS,
