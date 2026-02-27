@@ -9,7 +9,7 @@ from anthropic import AsyncAnthropic
 
 from .cad_engine import CadEngine
 
-DEFAULT_MODEL = "claude-sonnet-4-5"
+DEFAULT_MODEL = "claude-sonnet-4-6"
 CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", DEFAULT_MODEL)
 
 logger = logging.getLogger(__name__)
