@@ -14,7 +14,6 @@ const FEATURE_COLORS: number[][] = [
   [0.4, 0.7, 0.9], // Light Blue
 ];
 
-export type GridPlane = "XZ" | "XY" | "YZ" | null;
 export type ClipPlane = "XY" | "YZ" | "XZ" | null;
 
 interface ModelState {
@@ -38,10 +37,10 @@ interface ModelState {
   xrayMode: boolean;
   wireframeVisible: boolean;
   colorsVisible: boolean;
-  gridPlane: GridPlane;
   clipPlane: ClipPlane;
   clipOffset: number;
   clipFlipped: boolean;
+  fitAllCounter: number;
 
   // Actions
   loadModel: (
@@ -60,10 +59,10 @@ interface ModelState {
   setXray: (on: boolean) => void;
   setWireframe: (on: boolean) => void;
   setColors: (on: boolean) => void;
-  setGridPlane: (plane: GridPlane) => void;
   setClipPlane: (plane: ClipPlane) => void;
   setClipOffset: (offset: number) => void;
   flipClip: () => void;
+  fitAll: () => void;
 }
 
 export const useModelStore = create<ModelState>((set, get) => ({
@@ -87,10 +86,10 @@ export const useModelStore = create<ModelState>((set, get) => ({
   xrayMode: false,
   wireframeVisible: true,
   colorsVisible: true,
-  gridPlane: "XZ",
   clipPlane: null,
   clipOffset: 0,
   clipFlipped: false,
+  fitAllCounter: 0,
 
   // Actions
   loadModel: (meshData, faces, info, filename) => {
@@ -132,6 +131,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
       clipPlane: null,
       clipOffset: 0,
       clipFlipped: false,
+      fitAllCounter: get().fitAllCounter + 1,
     });
   },
 
@@ -254,8 +254,6 @@ export const useModelStore = create<ModelState>((set, get) => ({
   setXray: (on) => set({ xrayMode: on }),
   setWireframe: (on) => set({ wireframeVisible: on }),
   setColors: (on) => set({ colorsVisible: on }),
-  setGridPlane: (plane) =>
-    set((s) => ({ gridPlane: s.gridPlane === plane ? null : plane })),
   setClipPlane: (plane) =>
     set((s) => ({
       clipPlane: s.clipPlane === plane ? null : plane,
@@ -264,4 +262,5 @@ export const useModelStore = create<ModelState>((set, get) => ({
     })),
   setClipOffset: (offset) => set({ clipOffset: offset }),
   flipClip: () => set((s) => ({ clipFlipped: !s.clipFlipped })),
+  fitAll: () => set((s) => ({ fitAllCounter: s.fitAllCounter + 1 })),
 }));

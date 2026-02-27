@@ -1,50 +1,65 @@
-import { useMemo, useCallback } from "react";
-import { Canvas } from "@react-three/fiber";
-import { Grid, OrbitControls } from "@react-three/drei";
+import { useMemo, useCallback, useEffect, useRef } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
+import { TrackballControls } from "@react-three/drei";
 import * as THREE from "three";
 import CadModel from "./CadModel";
 import CadEdges from "./CadEdges";
 import Toolbar from "./Toolbar";
 import { useModelStore } from "../store/useModelStore";
 
-function GridHelper() {
-  const gridPlane = useModelStore((s) => s.gridPlane);
-
-  if (!gridPlane) return null;
-
-  // Grid rotation based on plane
-  const rotation: [number, number, number] =
-    gridPlane === "XZ"
-      ? [0, 0, 0]
-      : gridPlane === "XY"
-        ? [Math.PI / 2, 0, 0]
-        : [0, 0, Math.PI / 2];
-
-  return (
-    <Grid
-      args={[20, 20]}
-      cellSize={1}
-      cellColor="#444444"
-      sectionSize={5}
-      sectionColor="#888888"
-      fadeDistance={30}
-      infiniteGrid
-      rotation={rotation}
-    />
-  );
-}
-
 function SceneLighting() {
   return (
     <>
       <ambientLight intensity={0.7} />
-      <hemisphereLight
-        args={[0xffffff, 0x444444, 0.4]}
-      />
+      <hemisphereLight args={[0xffffff, 0x444444, 0.4]} />
       <directionalLight position={[5, 8, 5]} intensity={0.4} />
       <directionalLight position={[-5, -3, -5]} intensity={0.2} />
     </>
   );
+}
+
+function FitCameraHelper() {
+  const { camera, controls } = useThree();
+  const meshData = useModelStore((s) => s.meshData);
+  const fitAllCounter = useModelStore((s) => s.fitAllCounter);
+  const lastFit = useRef(0);
+
+  useEffect(() => {
+    if (fitAllCounter === lastFit.current) return;
+    lastFit.current = fitAllCounter;
+
+    if (!meshData) return;
+
+    // Compute bounding box from vertices
+    const positions = meshData.vertices;
+    const box = new THREE.Box3();
+    for (let i = 0; i < positions.length; i += 3) {
+      box.expandByPoint(new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]));
+    }
+
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+
+    const fov = (camera as THREE.PerspectiveCamera).fov;
+    const distance = maxDim / (2 * Math.tan((fov * Math.PI) / 360)) * 1.5;
+
+    // Position camera at isometric-ish angle
+    const dir = new THREE.Vector3(1, 0.8, 1).normalize();
+    camera.position.copy(center).addScaledVector(dir, distance);
+    camera.lookAt(center);
+    camera.updateProjectionMatrix();
+
+    // Update TrackballControls target
+    if (controls && "target" in controls) {
+      (controls as any).target.copy(center);
+      (controls as any).update();
+    }
+  }, [fitAllCounter, meshData, camera, controls]);
+
+  return null;
 }
 
 export function CadViewer() {
@@ -53,14 +68,13 @@ export function CadViewer() {
   const clipOffset = useModelStore((s) => s.clipOffset);
   const clipFlipped = useModelStore((s) => s.clipFlipped);
 
-  // Compute clipping planes
   const clippingPlanes = useMemo(() => {
     if (!clipPlane) return [];
 
     let normal: THREE.Vector3;
     if (clipPlane === "XY") normal = new THREE.Vector3(0, 0, 1);
     else if (clipPlane === "YZ") normal = new THREE.Vector3(1, 0, 0);
-    else normal = new THREE.Vector3(0, 1, 0); // XZ
+    else normal = new THREE.Vector3(0, 1, 0);
 
     if (clipFlipped) normal.negate();
     return [new THREE.Plane(normal, clipOffset)];
@@ -78,14 +92,14 @@ export function CadViewer() {
         onPointerMissed={handlePointerMissed}
       >
         <SceneLighting />
+        <FitCameraHelper />
         {isLoaded && (
           <>
             <CadModel clippingPlanes={clippingPlanes} />
             <CadEdges clippingPlanes={clippingPlanes} />
           </>
         )}
-        <GridHelper />
-        <OrbitControls makeDefault />
+        <TrackballControls makeDefault rotateSpeed={3} />
       </Canvas>
       <Toolbar />
     </div>

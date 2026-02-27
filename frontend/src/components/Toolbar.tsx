@@ -11,7 +11,6 @@ export default function Toolbar() {
   const xrayMode = useModelStore((s) => s.xrayMode);
   const wireframeVisible = useModelStore((s) => s.wireframeVisible);
   const colorsVisible = useModelStore((s) => s.colorsVisible);
-  const gridPlane = useModelStore((s) => s.gridPlane);
   const clipPlane = useModelStore((s) => s.clipPlane);
   const clipOffset = useModelStore((s) => s.clipOffset);
   const features = useModelStore((s) => s.features);
@@ -22,10 +21,10 @@ export default function Toolbar() {
   const setXray = useModelStore((s) => s.setXray);
   const setWireframe = useModelStore((s) => s.setWireframe);
   const setColors = useModelStore((s) => s.setColors);
-  const setGridPlane = useModelStore((s) => s.setGridPlane);
   const setClipPlane = useModelStore((s) => s.setClipPlane);
   const setClipOffset = useModelStore((s) => s.setClipOffset);
   const flipClip = useModelStore((s) => s.flipClip);
+  const fitAll = useModelStore((s) => s.fitAll);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -131,6 +130,13 @@ export default function Toolbar() {
           <>
             <span className="tb-divider" />
 
+            {/* View */}
+            <button className="tb-btn" onClick={fitAll} title="Fit model to view">
+              Fit All
+            </button>
+
+            <span className="tb-divider" />
+
             {/* Selection */}
             <button className="tb-btn" onClick={clearSelection} title="Clear selection (Esc)"
               disabled={selectedFaces.size === 0}>
@@ -168,20 +174,6 @@ export default function Toolbar() {
             >
               Colors
             </button>
-
-            <span className="tb-divider" />
-
-            {/* Grid */}
-            {(["XZ", "XY", "YZ"] as const).map((p) => (
-              <button
-                key={p}
-                className={`tb-btn ${gridPlane === p ? "tb-active" : ""}`}
-                onClick={() => setGridPlane(p)}
-                title={`Grid ${p}`}
-              >
-                {p}
-              </button>
-            ))}
 
             <span className="tb-divider" />
 
