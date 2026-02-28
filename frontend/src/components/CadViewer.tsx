@@ -79,10 +79,20 @@ function ViewHelper() {
   const viewRequest = useModelStore((s) => s.viewRequest);
 
   useEffect(() => {
-    if (!viewRequest || !meshData) return;
+    if (!viewRequest) return;
+    if (!meshData) {
+      console.warn("[ViewHelper] viewRequest received but no meshData loaded");
+      useModelStore.setState({ viewRequest: null });
+      return;
+    }
 
     const entry = VIEW_DIRECTIONS[viewRequest.view];
-    if (!entry) return;
+    if (!entry) {
+      console.warn("[ViewHelper] unknown view:", viewRequest.view);
+      useModelStore.setState({ viewRequest: null });
+      return;
+    }
+    console.log("[ViewHelper] applying view:", viewRequest.view, "zoom:", viewRequest.zoom);
 
     // Compute bounding box from vertices
     const positions = meshData.vertices;

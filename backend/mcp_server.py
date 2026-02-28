@@ -15,6 +15,8 @@ import traceback
 from collections import Counter
 from pathlib import Path
 
+import time
+
 import cadquery as cq
 import httpx
 import numpy as np
@@ -363,6 +365,8 @@ def set_view(
             timeout=5,
         )
         resp.raise_for_status()
+        # Give the browser time to receive WS, move camera, and render
+        time.sleep(0.5)
         return resp.json()
     except Exception as e:
         return {"error": str(e)}

@@ -42,6 +42,7 @@ function handleCadCommand(msg: CadCommandMessage) {
       break;
 
     case "set_view":
+      console.log("[WS] set_view received:", msg.view, msg.zoom);
       if (msg.view) {
         store.setView(msg.view, msg.zoom ?? 1.0);
       }
@@ -55,47 +56,71 @@ export function useWebSocket(url: string) {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
+    let ws: WebSocket;
+    let retryTimeout: ReturnType<typeof setTimeout>;
+    let cancelled = false;
 
-    ws.onopen = () => setConnected(true);
-    ws.onclose = () => setConnected(false);
+    function connect() {
+      if (cancelled) return;
+      ws = new WebSocket(url);
+      wsRef.current = ws;
 
-    ws.onmessage = (event) => {
-      const message: WSMessage = JSON.parse(event.data);
+      ws.onopen = () => {
+        if (!cancelled) setConnected(true);
+      };
 
-      // Intercept cad_command messages — dispatch to store, don't add to chat
-      if (message.type === "cad_command") {
-        handleCadCommand(message as CadCommandMessage);
-        return;
-      }
+      ws.onerror = () => {
+        // Suppress console noise — onclose handles retry
+      };
 
-      // Handle screenshot requests — capture canvas and POST back
-      if (message.type === "screenshot_request") {
-        const canvas = document.querySelector("canvas");
-        if (canvas) {
-          const dataUrl = canvas.toDataURL("image/png");
-          fetch("/api/screenshot", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: dataUrl }),
-          });
+      ws.onclose = () => {
+        setConnected(false);
+        // Reconnect after 2s unless unmounted
+        if (!cancelled) {
+          retryTimeout = setTimeout(connect, 2000);
         }
-        return;
-      }
+      };
 
-      // Handle model updates broadcast from REST uploads (e.g. MCP server)
-      if (message.type === "cad_update") {
-        const update = message as CadUpdateMessage;
-        const store = useModelStore.getState();
-        store.loadModel(update.mesh, update.faces, update.info, update.filename);
-        return;
-      }
+      ws.onmessage = (event) => {
+        const message: WSMessage = JSON.parse(event.data);
 
-      setMessages((prev) => [...prev, message]);
-    };
+        // Intercept cad_command messages — dispatch to store, don't add to chat
+        if (message.type === "cad_command") {
+          handleCadCommand(message as CadCommandMessage);
+          return;
+        }
+
+        // Handle screenshot requests — capture canvas and POST back
+        if (message.type === "screenshot_request") {
+          const canvas = document.querySelector("canvas");
+          if (canvas) {
+            const dataUrl = canvas.toDataURL("image/png");
+            fetch("/api/screenshot", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ image: dataUrl }),
+            });
+          }
+          return;
+        }
+
+        // Handle model updates broadcast from REST uploads (e.g. MCP server)
+        if (message.type === "cad_update") {
+          const update = message as CadUpdateMessage;
+          const store = useModelStore.getState();
+          store.loadModel(update.mesh, update.faces, update.info, update.filename);
+          return;
+        }
+
+        setMessages((prev) => [...prev, message]);
+      };
+    }
+
+    connect();
 
     return () => {
+      cancelled = true;
+      clearTimeout(retryTimeout);
       ws.close();
     };
   }, [url]);

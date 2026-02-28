@@ -34,6 +34,7 @@ The `.mcp.json` at project root registers a CadQuery MCP server with Claude Code
 | `get_model_info()` | Query loaded model metadata — face count, surface types, bounding box, features |
 | `query_faces(surface_type, min_area, max_area)` | Filter and inspect individual faces by type or area range |
 | `get_screenshot()` | Capture the current 3D viewport as a PNG image |
+| `set_view(view, zoom)` | Set camera to a standard view before capturing — front, back, left, right, top, bottom, isometric. Zoom: 1.0 = fit, 2.0 = 2x closer |
 
 ### Screenshot capture
 
@@ -47,6 +48,16 @@ The `get_screenshot` tool lets Claude Code see what's on screen. The flow:
 6. Claude Code receives the image
 
 This requires the backend, frontend, and a browser tab to be running.
+
+### View control
+
+The `set_view` tool orients the camera to a standard view before capturing screenshots. Use it in combination with `get_screenshot` to get consistent, oriented images of the model. The view change is also reflected live in the browser viewport.
+
+```
+set_view(view="front")        # front view, fit to model
+set_view(view="top", zoom=2)  # top-down, zoomed in 2x
+get_screenshot()              # capture the result
+```
 
 ## Setup
 
@@ -69,7 +80,13 @@ npm install
 
 ## Running
 
-Start both the backend and frontend in separate terminals:
+Quick start (both servers in one terminal):
+
+```bash
+./start.sh    # Ctrl+C stops both
+```
+
+Or start separately:
 
 ```bash
 # Terminal 1 — Backend (port 8000)

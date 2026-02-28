@@ -35,6 +35,7 @@ Re-platformed from the **steplabeler** project (`/Users/brianratliff/machine_lea
 | `/api/export` | POST | Export named STEP file download |
 | `/api/screenshot` | GET | Request viewport screenshot (triggers WS→browser→POST round-trip) |
 | `/api/screenshot` | POST | Receive base64 PNG from browser (internal) |
+| `/api/view` | POST | Set camera view orientation, broadcasts via WS |
 | `/ws` | WS | Chat (Claude-powered AI agent) |
 
 ### WebSocket Protocol
@@ -84,6 +85,7 @@ ChatPanel → useWebSocket → WS → ws.py → AIAgent → Anthropic API (Claud
 | `get_model_info` | Query loaded model metadata (faces, bbox, features) |
 | `query_faces` | Filter faces by surface type/area range |
 | `get_screenshot` | Capture viewport as PNG image (GET→WS→browser→POST round-trip) |
+| `set_view` | Set camera to standard view (front/back/left/right/top/bottom/isometric) with zoom |
 
 ### Screenshot Flow
 
@@ -98,6 +100,24 @@ Claude Code ──MCP stdio──> mcp_server.py::get_screenshot()
                       FastAPI POST handler → decode base64 → set event
                       GET handler returns PNG bytes → MCP returns Image
 ```
+
+### View Control Flow
+
+```
+Claude Code ──MCP stdio──> mcp_server.py::set_view(view, zoom)
+                                │ httpx POST /api/view
+                                ▼
+                      FastAPI POST handler
+                      → broadcast WS {"type":"cad_command", "action":"set_view", ...}
+                                ▼
+                      useWebSocket → handleCadCommand → store.setView()
+                                ▼
+                      ViewHelper component (CadViewer.tsx)
+                      → direction vector + bbox → camera position + up vector
+```
+
+Standard views: front, back, left, right, top, bottom, isometric (Y-up coordinate system).
+Zoom: 1.0 = fit model, 2.0 = 2x closer, 0.5 = 2x farther.
 
 ## Project Structure
 
@@ -134,6 +154,7 @@ agent-cad/
 - **Measurements**: 1 cylinder → diameter/radius; 2 parallel planes → distance; 2 non-parallel planes → angle; 2 cylinders → center distance or axis angle; cylinder+plane → axis-to-plane distance
 - **Features**: Auto sub-naming from surface type, 10-color palette, imports existing STEP names on load
 - **Fit-to-extents**: Auto on import + Fit All toolbar button; computes bounding box from vertices, positions camera at 1.5x distance
+- **View control**: ViewHelper component watches `viewRequest` in Zustand store; sets camera position from direction vector + bounding box, sets `camera.up` (critical for top/bottom), syncs TrackballControls target and up
 
 ## Environment Setup
 
@@ -154,6 +175,12 @@ npm run dev
 ```
 
 Note: `--reload` on uvicorn can be slow due to OCP import overhead. Omit it for faster startup.
+
+Or use the convenience script to start both at once:
+
+```bash
+./start.sh        # starts backend + frontend, Ctrl+C stops both
+```
 
 Open `http://localhost:5173` — Vite proxies `/api` and `/ws` to the backend.
 
