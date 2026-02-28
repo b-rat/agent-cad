@@ -9,7 +9,7 @@ The browser-based viewer renders STEP/STP files in an interactive 3D viewport bu
 - **Import** — Load `.step` / `.stp` files via the toolbar. The backend tessellates geometry with OCP and streams mesh data + face metadata to the frontend.
 - **Navigation** — TrackballControls for full continuous orbit (no gimbal lock), zoom, and pan.
 - **Face selection** — Click faces to select, shift-click to multi-select. Hover highlights with real-time feedback. Raycasting maps triangle hits back to B-Rep face IDs.
-- **Features** — Group selected faces into named features (snake_case). Features are color-coded with a 10-color palette. Existing STEP entity names are imported automatically.
+- **Features** — Group selected faces into named features (snake_case). Features are color-coded with a 10-color palette. Existing STEP entity names are imported automatically. Features sync to the backend so Claude Code (MCP) and the chat agent always see current state.
 - **Measurements** — Auto-computed from selected faces: cylinder diameter/radius, distance between parallel planes, angle between non-parallel planes, center distance between cylinders, axis-to-plane distance.
 - **Display modes** — X-ray (transparency), wireframe overlay, feature colors toggle, section clipping planes (XY/YZ/XZ with offset and flip), fit-to-extents.
 - **Export** — Save model with named features back to a STEP file.

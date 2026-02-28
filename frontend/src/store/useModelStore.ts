@@ -1,6 +1,17 @@
 import { create } from "zustand";
 import type { MeshData, FaceMetadata, ModelInfo, Feature, FeatureMember } from "../types";
 
+/** POST current features to the backend so MCP/agent can read them. */
+function syncFeaturesToBackend(features: Record<string, Feature>) {
+  fetch("/api/features", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ features }),
+  }).catch(() => {
+    // Backend may not be running — ignore
+  });
+}
+
 const FEATURE_COLORS: number[][] = [
   [0.9, 0.3, 0.3], // Red
   [0.3, 0.8, 0.3], // Green
@@ -136,6 +147,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
       clipFlipped: false,
       fitAllCounter: get().fitAllCounter + 1,
     });
+    syncFeaturesToBackend(features);
   },
 
   clearModel: () =>
@@ -235,6 +247,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
       faceToFeature: newFaceToFeature,
       selectedFaces: new Set(),
     });
+    syncFeaturesToBackend(newFeatures);
     return { success: true };
   },
 
@@ -252,6 +265,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
     delete newFeatures[name];
 
     set({ features: newFeatures, faceToFeature: newFaceToFeature });
+    syncFeaturesToBackend(newFeatures);
   },
 
   setXray: (on) => set({ xrayMode: on }),

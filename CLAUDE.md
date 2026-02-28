@@ -166,7 +166,7 @@ agent-cad/
 - **CadEngine** (`cad_engine.py`): Loads STEP files, parses ADVANCED_FACE entities, extracts face metadata (surface type, area, centroid, normals, cylinder radius/axis), tessellates via BRepMesh, discretizes topology edges, exports with named faces
 - **CadModel** renders imperatively: BufferGeometry with per-vertex color buffer rebuilt on selection/hover/feature changes. Raycasting via R3F `onPointerMove`/`onClick` → `faceIndex` → `face_ids` mapping. Drag-vs-click detection via pointerDown position tracking (>5px movement = drag, ignored)
 - **Measurements**: 1 cylinder → diameter/radius; 2 parallel planes → distance; 2 non-parallel planes → angle; 2 cylinders → center distance or axis angle; cylinder+plane → axis-to-plane distance
-- **Features**: Auto sub-naming from surface type, 10-color palette, imports existing STEP names on load
+- **Features**: Auto sub-naming from surface type, 10-color palette, imports existing STEP names on load. Frontend syncs features to backend (`POST /api/features`) on every create/delete/load so MCP and agent tools always see current state
 - **Fit-to-extents**: Auto on import + Fit All toolbar button; computes bounding box from vertices, positions camera at 1.5x distance
 - **View control**: ViewHelper component watches `viewRequest` in Zustand store; sets camera position from direction vector + bounding box, sets `camera.up` (critical for top/bottom), syncs TrackballControls target and up
 
