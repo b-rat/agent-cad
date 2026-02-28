@@ -331,5 +331,42 @@ def get_screenshot() -> Image | dict:
         return {"error": str(e)}
 
 
+@mcp.tool()
+def set_view(
+    view: str = "front",
+    zoom: float = 1.0,
+) -> dict:
+    """Set the camera view orientation in the 3D viewer.
+
+    Use this before get_screenshot() to orient the camera to a standard view.
+
+    Args:
+        view: Camera orientation — "front", "back", "left", "right",
+              "top", "bottom", or "isometric".
+        zoom: Zoom multiplier. 1.0 = fit model in view, 2.0 = 2x closer,
+              0.5 = 2x farther. Default 1.0.
+
+    Returns:
+        Confirmation of the view that was set.
+    """
+    valid_views = {"front", "back", "left", "right", "top", "bottom", "isometric"}
+    if view not in valid_views:
+        return {"error": f"Invalid view '{view}'. Must be one of: {', '.join(sorted(valid_views))}"}
+
+    if not _viewer_healthy():
+        return {"error": "Viewer backend is not running at " + VIEWER_URL}
+
+    try:
+        resp = httpx.post(
+            f"{VIEWER_URL}/api/view",
+            json={"view": view, "zoom": zoom},
+            timeout=5,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
 if __name__ == "__main__":
     mcp.run()

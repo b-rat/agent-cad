@@ -35,6 +35,8 @@ export interface CadCommandMessage {
   colors?: boolean;
   clip_plane?: string | null;
   fit_all?: boolean;
+  view?: string;
+  zoom?: number;
 }
 
 export interface ScreenshotRequestMessage {

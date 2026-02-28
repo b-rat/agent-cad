@@ -40,6 +40,12 @@ function handleCadCommand(msg: CadCommandMessage) {
       }
       if (msg.fit_all) store.fitAll();
       break;
+
+    case "set_view":
+      if (msg.view) {
+        store.setView(msg.view, msg.zoom ?? 1.0);
+      }
+      break;
   }
 }
 

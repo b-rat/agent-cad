@@ -15,6 +15,7 @@ export default function CadModel({ clippingPlanes }: CadModelProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const matRef = useRef<THREE.MeshPhongMaterial>(null);
   const colorsRef = useRef<Float32Array | null>(null);
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
 
   const meshData = useModelStore((s) => s.meshData);
   const selectedFaces = useModelStore((s) => s.selectedFaces);
@@ -164,9 +165,19 @@ export default function CadModel({ clippingPlanes }: CadModelProps) {
     setHoveredFace(-1);
   }, [setHoveredFace]);
 
+  const handlePointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
+    pointerDownPos.current = { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY };
+  }, []);
+
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
+      // Ignore clicks that were actually drags (rotation)
+      if (pointerDownPos.current) {
+        const dx = e.nativeEvent.clientX - pointerDownPos.current.x;
+        const dy = e.nativeEvent.clientY - pointerDownPos.current.y;
+        if (dx * dx + dy * dy > 25) return; // > 5px movement = drag
+      }
       if (e.faceIndex != null) {
         const faceId = getFaceAtIntersection(e.faceIndex);
         if (faceId >= 0) {
@@ -184,6 +195,7 @@ export default function CadModel({ clippingPlanes }: CadModelProps) {
     <mesh
       ref={meshRef}
       geometry={geometry}
+      onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerOut={handlePointerOut}
       onClick={handleClick}

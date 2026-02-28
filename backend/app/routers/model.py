@@ -141,6 +141,24 @@ async def post_screenshot(payload: ScreenshotPayload):
     return {"success": True}
 
 
+class ViewRequest(BaseModel):
+    view: str
+    zoom: float = 1.0
+
+
+@router.post("/view")
+async def set_view(request: ViewRequest):
+    """Set the camera view orientation in the 3D viewer."""
+    from .ws import broadcast
+    await broadcast({
+        "type": "cad_command",
+        "action": "set_view",
+        "view": request.view,
+        "zoom": request.zoom,
+    })
+    return {"success": True, "view": request.view, "zoom": request.zoom}
+
+
 @router.post("/export")
 async def export_step(request: ExportRequest):
     """Export named STEP file."""

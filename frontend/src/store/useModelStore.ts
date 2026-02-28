@@ -41,6 +41,7 @@ interface ModelState {
   clipOffset: number;
   clipFlipped: boolean;
   fitAllCounter: number;
+  viewRequest: { view: string; zoom: number } | null;
 
   // Actions
   loadModel: (
@@ -63,6 +64,7 @@ interface ModelState {
   setClipOffset: (offset: number) => void;
   flipClip: () => void;
   fitAll: () => void;
+  setView: (view: string, zoom: number) => void;
 }
 
 export const useModelStore = create<ModelState>((set, get) => ({
@@ -90,6 +92,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
   clipOffset: 0,
   clipFlipped: false,
   fitAllCounter: 0,
+  viewRequest: null,
 
   // Actions
   loadModel: (meshData, faces, info, filename) => {
@@ -263,4 +266,5 @@ export const useModelStore = create<ModelState>((set, get) => ({
   setClipOffset: (offset) => set({ clipOffset: offset }),
   flipClip: () => set((s) => ({ clipFlipped: !s.clipFlipped })),
   fitAll: () => set((s) => ({ fitAllCounter: s.fitAllCounter + 1 })),
+  setView: (view, zoom) => set({ viewRequest: { view, zoom } }),
 }));

@@ -63,6 +63,67 @@ function FitCameraHelper() {
   return null;
 }
 
+const VIEW_DIRECTIONS: Record<string, { dir: THREE.Vector3; up: THREE.Vector3 }> = {
+  front:     { dir: new THREE.Vector3(0, 0, 1),  up: new THREE.Vector3(0, 1, 0) },
+  back:      { dir: new THREE.Vector3(0, 0, -1), up: new THREE.Vector3(0, 1, 0) },
+  right:     { dir: new THREE.Vector3(1, 0, 0),  up: new THREE.Vector3(0, 1, 0) },
+  left:      { dir: new THREE.Vector3(-1, 0, 0), up: new THREE.Vector3(0, 1, 0) },
+  top:       { dir: new THREE.Vector3(0, 1, 0),  up: new THREE.Vector3(0, 0, -1) },
+  bottom:    { dir: new THREE.Vector3(0, -1, 0), up: new THREE.Vector3(0, 0, 1) },
+  isometric: { dir: new THREE.Vector3(1, 0.8, 1).normalize(), up: new THREE.Vector3(0, 1, 0) },
+};
+
+function ViewHelper() {
+  const { camera, controls } = useThree();
+  const meshData = useModelStore((s) => s.meshData);
+  const viewRequest = useModelStore((s) => s.viewRequest);
+
+  useEffect(() => {
+    if (!viewRequest || !meshData) return;
+
+    const entry = VIEW_DIRECTIONS[viewRequest.view];
+    if (!entry) return;
+
+    // Compute bounding box from vertices
+    const positions = meshData.vertices;
+    const box = new THREE.Box3();
+    for (let i = 0; i < positions.length; i += 3) {
+      box.expandByPoint(new THREE.Vector3(positions[i]!, positions[i + 1]!, positions[i + 2]!));
+    }
+
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+
+    const fov = (camera as THREE.PerspectiveCamera).fov;
+    const fitDistance = maxDim / (2 * Math.tan((fov * Math.PI) / 360)) * 1.5;
+    const distance = fitDistance / viewRequest.zoom;
+
+    // Set camera.up before positioning (critical for top/bottom views)
+    camera.up.copy(entry.up);
+    camera.position.copy(center).addScaledVector(entry.dir, distance);
+    camera.lookAt(center);
+    camera.updateProjectionMatrix();
+
+    // Update TrackballControls target and up vector
+    if (controls && "target" in controls) {
+      (controls as any).target.copy(center);
+      // TrackballControls has its own `up` that must match
+      if ("up" in (controls as any)) {
+        (controls as any).up.copy(entry.up);
+      }
+      (controls as any).update();
+    }
+
+    // Clear the request so it doesn't re-trigger
+    useModelStore.setState({ viewRequest: null });
+  }, [viewRequest, meshData, camera, controls]);
+
+  return null;
+}
+
 export function CadViewer() {
   const isLoaded = useModelStore((s) => s.isLoaded);
   const clipPlane = useModelStore((s) => s.clipPlane);
@@ -94,6 +155,7 @@ export function CadViewer() {
       >
         <SceneLighting />
         <FitCameraHelper />
+        <ViewHelper />
         {isLoaded && (
           <>
             <CadModel clippingPlanes={clippingPlanes} />
