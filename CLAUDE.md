@@ -19,7 +19,7 @@ Re-platformed from the **steplabeler** project (`/Users/brianratliff/machine_lea
 - **Frontend**: React + TypeScript + Vite + react-three-fiber (@react-three/fiber + @react-three/drei)
 - **Backend**: FastAPI + uvicorn + CadQuery/OCP + Anthropic SDK
 - **State**: Zustand store (`useModelStore`) — single source of truth for model, selection, features, display
-- **Communication**: WebSocket at `/ws` for chat (agentic); HTTP REST for model data (`/api/upload`, `/api/faces`, `/api/export`)
+- **Communication**: WebSocket at `/ws` for chat + cad_commands + screenshots (auto-reconnects every 2s); HTTP REST for model data and view control (`/api/upload`, `/api/faces`, `/api/view`, `/api/export`)
 - **CAD Engine**: CadQuery + OCP (ported from steplabeler's `step_processor.py`)
 - **3D Controls**: TrackballControls (full continuous orbit, no gimbal lock)
 
@@ -45,7 +45,7 @@ JSON messages with `type` field as discriminator:
 | Type | Direction | Purpose |
 |------|-----------|---------|
 | `chat` | Both | User prompts and AI responses |
-| `cad_command` | Server→Client | Agent tool actions (select, feature, display) |
+| `cad_command` | Server→Client | Agent tool actions — actions: `select_faces`, `clear_selection`, `create_feature`, `delete_feature`, `set_display`, `set_view` |
 | `cad_update` | Server→Client | Mesh data, modifications |
 | `screenshot_request` | Server→Client | Ask browser to capture canvas and POST back |
 | `drawing` | Both | Strokes, annotations |
@@ -123,13 +123,16 @@ Zoom: 1.0 = fit model, 2.0 = 2x closer, 0.5 = 2x farther.
 
 ```
 agent-cad/
+├── .mcp.json              # MCP server config (registers backend/mcp_server.py)
+├── start.sh               # Start backend + frontend, Ctrl+C stops both
 ├── frontend/
 │   ├── src/
 │   │   ├── store/         # useModelStore (Zustand)
 │   │   ├── components/
-│   │   │   ├── CadViewer.tsx       # Canvas + lighting + TrackballControls + fit-to-extents
-│   │   │   ├── CadModel.tsx        # Imperative mesh: BufferGeometry, vertex colors, raycasting
+│   │   │   ├── CadViewer.tsx       # Canvas + lighting + TrackballControls + FitCameraHelper + ViewHelper
+│   │   │   ├── CadModel.tsx        # Imperative mesh: BufferGeometry, vertex colors, raycasting, drag detection
 │   │   │   ├── CadEdges.tsx        # Wireframe from CAD topology edges
+│   │   │   ├── OriginAxes.tsx      # XYZ axis marker with labels
 │   │   │   ├── Toolbar.tsx         # Import, view controls, display toggles, clip planes, export
 │   │   │   ├── RightPanel.tsx      # Tabbed: Features / Face List / Chat
 │   │   │   ├── FeaturesPanel.tsx   # Selection info, create/delete features, measurements
@@ -137,10 +140,11 @@ agent-cad/
 │   │   │   ├── MeasurementDisplay.tsx  # Auto-computed measurements from selected faces
 │   │   │   ├── FeatureNameDialog.tsx   # Modal for naming features (snake_case)
 │   │   │   └── ChatPanel.tsx       # WebSocket chat UI with thinking indicator
-│   │   ├── hooks/         # useWebSocket (dispatches cad_command → Zustand)
+│   │   ├── hooks/         # useWebSocket (cad_command dispatch, auto-reconnect)
 │   │   └── types/         # TypeScript interfaces (MeshData, FaceMetadata, Feature, CadCommandMessage, etc.)
 │   └── ...
 └── backend/
+    ├── mcp_server.py      # MCP server for Claude Code (CadQuery, screenshots, view control)
     └── app/
         ├── routers/       # health.py, model.py, ws.py
         ├── services/      # cad_engine.py (full STEP processor), ai_agent.py (Claude agent with tool use)
@@ -150,7 +154,7 @@ agent-cad/
 ## Key Implementation Details
 
 - **CadEngine** (`cad_engine.py`): Loads STEP files, parses ADVANCED_FACE entities, extracts face metadata (surface type, area, centroid, normals, cylinder radius/axis), tessellates via BRepMesh, discretizes topology edges, exports with named faces
-- **CadModel** renders imperatively: BufferGeometry with per-vertex color buffer rebuilt on selection/hover/feature changes. Raycasting via R3F `onPointerMove`/`onClick` → `faceIndex` → `face_ids` mapping
+- **CadModel** renders imperatively: BufferGeometry with per-vertex color buffer rebuilt on selection/hover/feature changes. Raycasting via R3F `onPointerMove`/`onClick` → `faceIndex` → `face_ids` mapping. Drag-vs-click detection via pointerDown position tracking (>5px movement = drag, ignored)
 - **Measurements**: 1 cylinder → diameter/radius; 2 parallel planes → distance; 2 non-parallel planes → angle; 2 cylinders → center distance or axis angle; cylinder+plane → axis-to-plane distance
 - **Features**: Auto sub-naming from surface type, 10-color palette, imports existing STEP names on load
 - **Fit-to-extents**: Auto on import + Fit All toolbar button; computes bounding box from vertices, positions camera at 1.5x distance
