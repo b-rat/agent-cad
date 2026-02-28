@@ -8,10 +8,10 @@ export interface ChatMessage {
 
 export interface CadUpdateMessage {
   type: "cad_update";
-  vertices: number[];
-  faces: number[];
-  normals: number[];
-  metadata?: FaceMetadata[];
+  mesh: MeshData;
+  faces: FaceMetadata[];
+  info: ModelInfo;
+  filename: string;
 }
 
 export interface DrawingMessage {

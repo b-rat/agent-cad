@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { WSMessage, CadCommandMessage } from "../types";
+import type { WSMessage, CadCommandMessage, CadUpdateMessage } from "../types";
 import { useModelStore } from "../store/useModelStore";
 import type { ClipPlane } from "../store/useModelStore";
 
@@ -61,6 +61,14 @@ export function useWebSocket(url: string) {
       // Intercept cad_command messages — dispatch to store, don't add to chat
       if (message.type === "cad_command") {
         handleCadCommand(message as CadCommandMessage);
+        return;
+      }
+
+      // Handle model updates broadcast from REST uploads (e.g. MCP server)
+      if (message.type === "cad_update") {
+        const update = message as CadUpdateMessage;
+        const store = useModelStore.getState();
+        store.loadModel(update.mesh, update.faces, update.info, update.filename);
         return;
       }
 

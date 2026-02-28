@@ -10,10 +10,26 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Connected WebSocket clients — used to broadcast model updates from REST uploads
+connected_clients: set[WebSocket] = set()
+
+
+async def broadcast(data: dict):
+    """Send a message to all connected WebSocket clients."""
+    dead: list[WebSocket] = []
+    for ws in connected_clients:
+        try:
+            await ws.send_json(data)
+        except Exception:
+            dead.append(ws)
+    for ws in dead:
+        connected_clients.discard(ws)
+
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    connected_clients.add(websocket)
 
     # Closure that sends JSON to this specific websocket connection
     async def send_command(data: dict):
@@ -48,4 +64,4 @@ async def websocket_endpoint(websocket: WebSocket):
                         "content": "An error occurred while processing your message. Please try again.",
                     })
     except WebSocketDisconnect:
-        pass
+        connected_clients.discard(websocket)

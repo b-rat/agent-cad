@@ -36,13 +36,25 @@ async def upload_step(file: UploadFile = File(...)):
         mesh_dict = engine.tessellate()
         faces_list = engine.get_faces_metadata()
 
-        return UploadResponse(
+        response = UploadResponse(
             success=True,
             info=ModelInfo(**info_dict),
             mesh=MeshData(**mesh_dict),
             faces=[FaceMetadata(**f) for f in faces_list],
             filename=file.filename,
         )
+
+        # Broadcast to all connected WebSocket clients so the viewer updates
+        from .ws import broadcast
+        await broadcast({
+            "type": "cad_update",
+            "mesh": mesh_dict,
+            "faces": faces_list,
+            "info": info_dict,
+            "filename": file.filename,
+        })
+
+        return response
     except Exception as e:
         return UploadResponse(success=False, error=str(e))
 
