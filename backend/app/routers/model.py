@@ -159,6 +159,90 @@ async def set_view(request: ViewRequest):
     return {"success": True, "view": request.view, "zoom": request.zoom}
 
 
+class SelectFacesRequest(BaseModel):
+    face_ids: list[int]
+
+
+@router.post("/select-faces")
+async def select_faces(request: SelectFacesRequest):
+    """Select faces in the 3D viewer by ID. Replaces current selection."""
+    from .ws import broadcast
+    await broadcast({"type": "cad_command", "action": "clear_selection"})
+    await broadcast({
+        "type": "cad_command",
+        "action": "select_faces",
+        "face_ids": request.face_ids,
+    })
+    return {"success": True, "face_ids": request.face_ids}
+
+
+@router.post("/clear-selection")
+async def clear_selection():
+    """Clear all face selections in the 3D viewer."""
+    from .ws import broadcast
+    await broadcast({"type": "cad_command", "action": "clear_selection"})
+    return {"success": True}
+
+
+class CreateFeatureRequest(BaseModel):
+    name: str
+
+
+@router.post("/create-feature")
+async def create_feature(request: CreateFeatureRequest):
+    """Create a named feature from currently selected faces."""
+    from .ws import broadcast
+    await broadcast({
+        "type": "cad_command",
+        "action": "create_feature",
+        "name": request.name,
+    })
+    return {"success": True, "name": request.name}
+
+
+class DeleteFeatureRequest(BaseModel):
+    name: str
+
+
+@router.post("/delete-feature")
+async def delete_feature(request: DeleteFeatureRequest):
+    """Delete a named feature."""
+    from .ws import broadcast
+    await broadcast({
+        "type": "cad_command",
+        "action": "delete_feature",
+        "name": request.name,
+    })
+    return {"success": True, "name": request.name}
+
+
+class DisplayRequest(BaseModel):
+    xray: bool | None = None
+    wireframe: bool | None = None
+    colors: bool | None = None
+    clip_plane: str | None = None
+    fit_all: bool | None = None
+
+
+@router.post("/display")
+async def set_display(request: DisplayRequest):
+    """Control viewport display settings."""
+    from .ws import broadcast
+    payload: dict = {"type": "cad_command", "action": "set_display"}
+    if request.xray is not None:
+        payload["xray"] = request.xray
+    if request.wireframe is not None:
+        payload["wireframe"] = request.wireframe
+    if request.colors is not None:
+        payload["colors"] = request.colors
+    if request.clip_plane is not None:
+        payload["clip_plane"] = request.clip_plane
+    if request.fit_all is not None:
+        payload["fit_all"] = request.fit_all
+    await broadcast(payload)
+    return {"success": True}
+
+
 @router.post("/export")
 async def export_step(request: ExportRequest):
     """Export named STEP file."""

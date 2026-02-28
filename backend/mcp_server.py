@@ -372,5 +372,134 @@ def set_view(
         return {"error": str(e)}
 
 
+@mcp.tool()
+def select_faces(face_ids: list[int]) -> dict:
+    """Select faces in the 3D viewer by ID. Replaces current selection.
+
+    Args:
+        face_ids: List of face IDs to select (e.g. [0, 1, 2]).
+    """
+    if not _viewer_healthy():
+        return {"error": "Viewer backend is not running at " + VIEWER_URL}
+
+    try:
+        resp = httpx.post(
+            f"{VIEWER_URL}/api/select-faces",
+            json={"face_ids": face_ids},
+            timeout=5,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@mcp.tool()
+def clear_selection() -> dict:
+    """Clear all face selections in the 3D viewer."""
+    if not _viewer_healthy():
+        return {"error": "Viewer backend is not running at " + VIEWER_URL}
+
+    try:
+        resp = httpx.post(
+            f"{VIEWER_URL}/api/clear-selection",
+            timeout=5,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@mcp.tool()
+def create_feature(name: str) -> dict:
+    """Create a named feature from the currently selected faces.
+
+    Args:
+        name: Name for the feature (e.g. "bore_hole", "mounting_face").
+    """
+    if not _viewer_healthy():
+        return {"error": "Viewer backend is not running at " + VIEWER_URL}
+
+    try:
+        resp = httpx.post(
+            f"{VIEWER_URL}/api/create-feature",
+            json={"name": name},
+            timeout=5,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@mcp.tool()
+def delete_feature(name: str) -> dict:
+    """Delete a named feature.
+
+    Args:
+        name: Name of the feature to delete.
+    """
+    if not _viewer_healthy():
+        return {"error": "Viewer backend is not running at " + VIEWER_URL}
+
+    try:
+        resp = httpx.post(
+            f"{VIEWER_URL}/api/delete-feature",
+            json={"name": name},
+            timeout=5,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@mcp.tool()
+def set_display(
+    xray: bool | None = None,
+    wireframe: bool | None = None,
+    colors: bool | None = None,
+    clip_plane: str | None = None,
+    fit_all: bool | None = None,
+) -> dict:
+    """Control viewport display settings.
+
+    All parameters are optional — only provided values are changed.
+
+    Args:
+        xray: Enable/disable X-ray (transparent) mode.
+        wireframe: Enable/disable wireframe overlay.
+        colors: Enable/disable per-feature colors.
+        clip_plane: Set clip plane ("x", "y", "z", or None to disable).
+        fit_all: If True, fit the model to the viewport.
+    """
+    if not _viewer_healthy():
+        return {"error": "Viewer backend is not running at " + VIEWER_URL}
+
+    payload: dict = {}
+    if xray is not None:
+        payload["xray"] = xray
+    if wireframe is not None:
+        payload["wireframe"] = wireframe
+    if colors is not None:
+        payload["colors"] = colors
+    if clip_plane is not None:
+        payload["clip_plane"] = clip_plane
+    if fit_all is not None:
+        payload["fit_all"] = fit_all
+
+    try:
+        resp = httpx.post(
+            f"{VIEWER_URL}/api/display",
+            json=payload,
+            timeout=5,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
 if __name__ == "__main__":
     mcp.run()
