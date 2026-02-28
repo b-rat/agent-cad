@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "cad-tools": {
+      "type": "stdio",
+      "command": "backend/.venv/bin/python",
+      "args": ["backend/mcp_server.py"]
+    }
+  }
+}

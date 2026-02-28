@@ -38,3 +38,6 @@ uploads/
 tmp/
 *.step
 *.stp
+
+# Generated CAD output
+generated/
