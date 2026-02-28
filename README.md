@@ -24,7 +24,7 @@ The right panel includes a Chat tab connected to a Claude-powered AI agent via W
 
 ## MCP / Claude Code Integration
 
-The `.mcp.json` at project root registers a CadQuery MCP server with Claude Code. Any Claude Code session opened in this directory can generate geometry and interact with the viewer.
+The `.mcp.json` at project root registers a CadQuery MCP server with Claude Code. Any Claude Code session opened in this directory can generate geometry, label features, control the display, and interact with the viewer.
 
 ### MCP Tools
 
@@ -35,6 +35,11 @@ The `.mcp.json` at project root registers a CadQuery MCP server with Claude Code
 | `query_faces(surface_type, min_area, max_area)` | Filter and inspect individual faces by type or area range |
 | `get_screenshot()` | Capture the current 3D viewport as a PNG image |
 | `set_view(view, zoom)` | Set camera to a standard view before capturing — front, back, left, right, top, bottom, isometric. Zoom: 1.0 = fit, 2.0 = 2x closer |
+| `select_faces(face_ids)` | Select faces in the viewport by ID. Replaces current selection |
+| `clear_selection()` | Clear all face selections |
+| `create_feature(name)` | Create a named feature from the currently selected faces |
+| `delete_feature(name)` | Delete a named feature |
+| `set_display(xray, wireframe, colors, clip_plane, fit_all)` | Control viewport display settings — all parameters optional |
 
 ### Screenshot capture
 
@@ -57,6 +62,20 @@ The `set_view` tool orients the camera to a standard view before capturing scree
 set_view(view="front")        # front view, fit to model
 set_view(view="top", zoom=2)  # top-down, zoomed in 2x
 get_screenshot()              # capture the result
+```
+
+### Feature labeling
+
+Claude Code can select faces, create named features, and control display — the same capabilities as the in-app chat agent. All actions are reflected live in the browser viewport.
+
+```
+query_faces(surface_type="cylindrical")       # find cylindrical faces
+select_faces(face_ids=[3, 7])                 # select them in the viewport
+create_feature(name="bore_hole")              # label as a feature
+set_display(xray=True)                        # x-ray mode to see internals
+set_display(xray=False, fit_all=True)         # reset
+delete_feature(name="bore_hole")              # remove if needed
+clear_selection()                             # deselect all
 ```
 
 ## Setup

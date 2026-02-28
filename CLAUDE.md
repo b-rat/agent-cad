@@ -19,7 +19,7 @@ Re-platformed from the **steplabeler** project (`/Users/brianratliff/machine_lea
 - **Frontend**: React + TypeScript + Vite + react-three-fiber (@react-three/fiber + @react-three/drei)
 - **Backend**: FastAPI + uvicorn + CadQuery/OCP + Anthropic SDK
 - **State**: Zustand store (`useModelStore`) — single source of truth for model, selection, features, display
-- **Communication**: WebSocket at `/ws` for chat + cad_commands + screenshots (auto-reconnects every 2s); HTTP REST for model data and view control (`/api/upload`, `/api/faces`, `/api/view`, `/api/export`)
+- **Communication**: WebSocket at `/ws` for chat + cad_commands + screenshots (auto-reconnects every 2s); HTTP REST for model data, view control, face selection, features, and display (`/api/upload`, `/api/faces`, `/api/view`, `/api/select-faces`, `/api/create-feature`, `/api/display`, `/api/export`)
 - **CAD Engine**: CadQuery + OCP (ported from steplabeler's `step_processor.py`)
 - **3D Controls**: TrackballControls (full continuous orbit, no gimbal lock)
 
@@ -36,6 +36,11 @@ Re-platformed from the **steplabeler** project (`/Users/brianratliff/machine_lea
 | `/api/screenshot` | GET | Request viewport screenshot (triggers WS→browser→POST round-trip) |
 | `/api/screenshot` | POST | Receive base64 PNG from browser (internal) |
 | `/api/view` | POST | Set camera view orientation, broadcasts via WS |
+| `/api/select-faces` | POST | Select faces by ID (clears then selects), broadcasts via WS |
+| `/api/clear-selection` | POST | Clear all face selections, broadcasts via WS |
+| `/api/create-feature` | POST | Create named feature from selected faces, broadcasts via WS |
+| `/api/delete-feature` | POST | Delete a named feature, broadcasts via WS |
+| `/api/display` | POST | Set display options (xray, wireframe, colors, clip, fit), broadcasts via WS |
 | `/ws` | WS | Chat (Claude-powered AI agent) |
 
 ### WebSocket Protocol
@@ -86,6 +91,11 @@ ChatPanel → useWebSocket → WS → ws.py → AIAgent → Anthropic API (Claud
 | `query_faces` | Filter faces by surface type/area range |
 | `get_screenshot` | Capture viewport as PNG image (GET→WS→browser→POST round-trip) |
 | `set_view` | Set camera to standard view (front/back/left/right/top/bottom/isometric) with zoom |
+| `select_faces` | Select faces in viewport by ID (replaces current selection) |
+| `clear_selection` | Clear all face selections |
+| `create_feature` | Create named feature from currently selected faces |
+| `delete_feature` | Delete a named feature |
+| `set_display` | Control display settings (xray, wireframe, colors, clip plane, fit all) |
 
 ### Screenshot Flow
 
@@ -144,7 +154,7 @@ agent-cad/
 │   │   └── types/         # TypeScript interfaces (MeshData, FaceMetadata, Feature, CadCommandMessage, etc.)
 │   └── ...
 └── backend/
-    ├── mcp_server.py      # MCP server for Claude Code (CadQuery, screenshots, view control)
+    ├── mcp_server.py      # MCP server for Claude Code (CadQuery, screenshots, view, selection, features, display)
     └── app/
         ├── routers/       # health.py, model.py, ws.py
         ├── services/      # cad_engine.py (full STEP processor), ai_agent.py (Claude agent with tool use)
