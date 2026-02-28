@@ -4,6 +4,7 @@ import { TrackballControls } from "@react-three/drei";
 import * as THREE from "three";
 import CadModel from "./CadModel";
 import CadEdges from "./CadEdges";
+import OriginAxes from "./OriginAxes";
 import Toolbar from "./Toolbar";
 import { useModelStore } from "../store/useModelStore";
 
@@ -99,6 +100,7 @@ export function CadViewer() {
             <CadEdges clippingPlanes={clippingPlanes} />
           </>
         )}
+        <OriginAxes />
         <TrackballControls makeDefault rotateSpeed={3} />
       </Canvas>
       <Toolbar />
