@@ -128,6 +128,10 @@ export function useWebSocket(url: string) {
   const sendMessage = useCallback((message: WSMessage) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
+      // Add user chat messages to local state so they appear in the UI
+      if (message.type === "chat") {
+        setMessages((prev) => [...prev, message]);
+      }
     }
   }, []);
 
