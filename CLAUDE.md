@@ -117,7 +117,10 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-export ANTHROPIC_API_KEY=<your-key>
+# Auth — set ONE of these:
+export ANTHROPIC_API_KEY=<your-api-key>        # standard API key (sk-ant-api...)
+# OR
+export ANTHROPIC_AUTH_TOKEN=<your-oauth-token>  # OAuth token (sk-ant-oat...)
 # Optional: export CLAUDE_MODEL=claude-opus-4-6  (default: claude-sonnet-4-6)
 uvicorn app.main:app --port 8000
 
