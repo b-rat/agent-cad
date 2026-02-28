@@ -37,12 +37,17 @@ export interface CadCommandMessage {
   fit_all?: boolean;
 }
 
+export interface ScreenshotRequestMessage {
+  type: "screenshot_request";
+}
+
 export type WSMessage =
   | ChatMessage
   | CadUpdateMessage
   | DrawingMessage
   | SystemMessage
-  | CadCommandMessage;
+  | CadCommandMessage
+  | ScreenshotRequestMessage;
 
 // --- CAD model types ---
 

@@ -89,7 +89,7 @@ export function CadViewer() {
     <div className="viewer-container" style={{ position: "relative", width: "100%", height: "100%" }}>
       <Canvas
         camera={{ position: [3, 3, 3], fov: 50 }}
-        gl={{ localClippingEnabled: true }}
+        gl={{ localClippingEnabled: true, preserveDrawingBuffer: true }}
         onPointerMissed={handlePointerMissed}
       >
         <SceneLighting />

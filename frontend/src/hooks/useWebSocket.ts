@@ -64,6 +64,20 @@ export function useWebSocket(url: string) {
         return;
       }
 
+      // Handle screenshot requests — capture canvas and POST back
+      if (message.type === "screenshot_request") {
+        const canvas = document.querySelector("canvas");
+        if (canvas) {
+          const dataUrl = canvas.toDataURL("image/png");
+          fetch("/api/screenshot", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: dataUrl }),
+          });
+        }
+        return;
+      }
+
       // Handle model updates broadcast from REST uploads (e.g. MCP server)
       if (message.type === "cad_update") {
         const update = message as CadUpdateMessage;

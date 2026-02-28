@@ -1,8 +1,11 @@
+import asyncio
+import base64
 import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
+from pydantic import BaseModel
 
 from ..models.messages import (
     FaceMetadata, MeshData, ModelInfo, UploadResponse, ExportRequest,
@@ -13,6 +16,10 @@ router = APIRouter(prefix="/api", tags=["model"])
 
 # Single global engine instance (matches steplabeler pattern)
 engine = CadEngine()
+
+# Screenshot handshake state
+_screenshot_data: bytes | None = None
+_screenshot_event: asyncio.Event | None = None
 
 
 @router.post("/upload", response_model=UploadResponse)
@@ -88,6 +95,50 @@ async def save_features(data: dict):
 async def get_features():
     """Get current feature definitions."""
     return {"features": engine.features}
+
+
+class ScreenshotPayload(BaseModel):
+    image: str  # data:image/png;base64,... URL
+
+
+@router.get("/screenshot")
+async def get_screenshot():
+    """Request a screenshot from the browser and return PNG bytes."""
+    global _screenshot_data, _screenshot_event
+    _screenshot_data = None
+    _screenshot_event = asyncio.Event()
+
+    # Ask all connected browsers to capture their canvas
+    from .ws import broadcast
+    await broadcast({"type": "screenshot_request"})
+
+    # Wait for the browser to POST back the image
+    try:
+        await asyncio.wait_for(_screenshot_event.wait(), timeout=5.0)
+    except asyncio.TimeoutError:
+        raise HTTPException(504, "Screenshot capture timed out — is the browser open?")
+
+    if _screenshot_data is None:
+        raise HTTPException(500, "Screenshot data was not received")
+
+    return Response(content=_screenshot_data, media_type="image/png")
+
+
+@router.post("/screenshot")
+async def post_screenshot(payload: ScreenshotPayload):
+    """Receive a screenshot from the browser (base64 data URL)."""
+    global _screenshot_data, _screenshot_event
+
+    # Strip the data URL prefix: "data:image/png;base64,..."
+    header, _, b64 = payload.image.partition(",")
+    if not b64:
+        raise HTTPException(400, "Invalid image data URL")
+
+    _screenshot_data = base64.b64decode(b64)
+    if _screenshot_event is not None:
+        _screenshot_event.set()
+
+    return {"success": True}
 
 
 @router.post("/export")

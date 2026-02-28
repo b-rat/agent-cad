@@ -33,6 +33,8 @@ Re-platformed from the **steplabeler** project (`/Users/brianratliff/machine_lea
 | `/api/face/{id}` | GET | Single face metadata |
 | `/api/features` | GET/POST | Get/save feature definitions |
 | `/api/export` | POST | Export named STEP file download |
+| `/api/screenshot` | GET | Request viewport screenshot (triggers WS→browser→POST round-trip) |
+| `/api/screenshot` | POST | Receive base64 PNG from browser (internal) |
 | `/ws` | WS | Chat (Claude-powered AI agent) |
 
 ### WebSocket Protocol
@@ -44,6 +46,7 @@ JSON messages with `type` field as discriminator:
 | `chat` | Both | User prompts and AI responses |
 | `cad_command` | Server→Client | Agent tool actions (select, feature, display) |
 | `cad_update` | Server→Client | Mesh data, modifications |
+| `screenshot_request` | Server→Client | Ask browser to capture canvas and POST back |
 | `drawing` | Both | Strokes, annotations |
 | `system` | Server→Client | Connection status, errors |
 
@@ -72,6 +75,29 @@ ChatPanel → useWebSocket → WS → ws.py → AIAgent → Anthropic API (Claud
 | `create_feature` | Group faces into named feature | Sends select + create commands |
 | `delete_feature` | Remove a feature | Sends `cad_command` → Zustand |
 | `set_display` | Toggle xray/wireframe/colors/clip/fit | Sends `cad_command` → Zustand |
+
+### MCP Server Tools (Claude Code integration via `mcp_server.py`)
+
+| Tool | Purpose |
+|------|---------|
+| `execute_cadquery` | Run CadQuery code, export STEP, push to viewer |
+| `get_model_info` | Query loaded model metadata (faces, bbox, features) |
+| `query_faces` | Filter faces by surface type/area range |
+| `get_screenshot` | Capture viewport as PNG image (GET→WS→browser→POST round-trip) |
+
+### Screenshot Flow
+
+```
+Claude Code ──MCP stdio──> mcp_server.py::get_screenshot()
+                                │ httpx GET /api/screenshot
+                                ▼
+                      FastAPI GET handler → broadcast WS {"type":"screenshot_request"}
+                                         → await asyncio.Event (5s timeout)
+                      Browser receives WS → canvas.toDataURL("image/png")
+                                         → POST /api/screenshot {image: dataURL}
+                      FastAPI POST handler → decode base64 → set event
+                      GET handler returns PNG bytes → MCP returns Image
+```
 
 ## Project Structure
 

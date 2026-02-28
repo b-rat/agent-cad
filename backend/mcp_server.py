@@ -19,6 +19,7 @@ import cadquery as cq
 import httpx
 import numpy as np
 from fastmcp import FastMCP
+from fastmcp.utilities.types import Image
 from OCP.Bnd import Bnd_Box
 from OCP.BRepBndLib import BRepBndLib
 from OCP.BRepGProp import BRepGProp
@@ -307,6 +308,27 @@ def query_faces(
         "faces": faces[:limit],
         "truncated": len(faces) > limit,
     }
+
+
+@mcp.tool()
+def get_screenshot() -> Image | dict:
+    """Capture a screenshot of the 3D viewer and return it as a PNG image.
+
+    Requires the viewer backend and a browser with the viewer open.
+    Returns the current viewport as a PNG image."""
+    if not _viewer_healthy():
+        return {"error": "Viewer backend is not running at " + VIEWER_URL}
+
+    try:
+        resp = httpx.get(f"{VIEWER_URL}/api/screenshot", timeout=10)
+        resp.raise_for_status()
+        return Image(data=resp.content, format="png")
+    except httpx.TimeoutException:
+        return {"error": "Screenshot timed out — is the browser open at localhost:5173?"}
+    except httpx.HTTPStatusError as e:
+        return {"error": f"Screenshot failed: {e.response.status_code} {e.response.text[:200]}"}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 if __name__ == "__main__":
