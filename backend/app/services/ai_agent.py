@@ -170,8 +170,7 @@ class AIAgent:
     def __init__(self, cad_engine: CadEngine, send_command: SendCommand) -> None:
         self.cad_engine = cad_engine
         self.send_command = send_command
-        # Supports both API key (ANTHROPIC_API_KEY) and OAuth token (ANTHROPIC_AUTH_TOKEN)
-        self.client = AsyncAnthropic()
+        self.client = AsyncAnthropic()  # reads ANTHROPIC_API_KEY from env
         self.conversation_history: list[dict] = []
 
     async def send_message(self, user_message: str) -> str:
